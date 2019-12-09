@@ -5,11 +5,18 @@ import pandas as pd
 import numpy as np
 
 
-
 def readData(arr, filename):
-    with open(filename) as file:
+    docs = 0
+    with open(filename, encoding="latin-1") as file:
+        next(file)
         for line in file:
+            line = line.split(',')
+            line = line[-1]
             arr.append(line)
+            docs += 1
+            if docs > 200000:
+                print("building reduced matrix...")
+                break
 
 
 def buildTDM(vectorizer, svd, corpus):
@@ -24,10 +31,8 @@ def buildTDM(vectorizer, svd, corpus):
 
 
 def buildQuery(vectorizer, svd, tdm, words):
-    q = []
-    readData(q, "query.txt")
-
-    print("Query:", q[0].rstrip())
+    q = input("Enter your query: ")
+    q = q.split(' ')
 
     q = vectorizer.fit_transform(q)
     q = pd.DataFrame(q.toarray())
@@ -58,18 +63,20 @@ def rankDocuments(q, tdm):
     print()
     print("Most relevant documents")
     print("------------------------")
-    for i in range(len(ranks)):
+    for i in range(min(len(ranks), 10)):
         print(corpus[ranks[i][1]].rstrip())
 
 
 
+rank = 300
 corpus = []
-readData(corpus, "docs.txt")
+readData(corpus, "dataset.csv")
 
-vectorizer = TfidfVectorizer(stop_words="english")
-svd = TruncatedSVD()
+vectorizer = TfidfVectorizer("english")
+svd = TruncatedSVD(n_components=rank)
 
 tdm, words = buildTDM(vectorizer, svd, corpus)
-q = buildQuery(vectorizer, svd, tdm, words)
 
-rankDocuments(q, tdm)
+while True:
+    q = buildQuery(vectorizer, svd, tdm, words)
+    rankDocuments(q, tdm)

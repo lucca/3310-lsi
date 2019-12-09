@@ -7,9 +7,17 @@ import string
 
 
 def readData(arr, filename):
-    with open(filename) as file:
+    docs = 0
+    with open(filename, encoding="latin-1") as file:
+        next(file)
         for line in file:
+            line = line.split(',')
+            line = line[-1]
             arr.append(line)
+            docs += 1
+            if docs > 1000:
+                print("building reduced matrix...")
+                break
 
 
 def normalize(arr):
@@ -50,10 +58,8 @@ def buildTDM(corpus, vectorizer, rank):
 
 
 def buildQuery(vectorizer, words, u, s):
-    q = []
-    readData(q, "query.txt")
-
-    print("Query:", q[0].rstrip())
+    q = input("Enter your query: ")
+    q = q.split(' ')
 
     q = vectorizer.fit_transform(q)
     q = pd.DataFrame(q.toarray())
@@ -89,17 +95,18 @@ def rankDocuments(q, vh):
     print()
     print("Most relevant documents")
     print("------------------------")
-    for i in range(len(ranks)):
+    for i in range(min(len(ranks), 10)):
         print(corpus[ranks[i][1]].rstrip())
 
 
 
-rank = 2
+rank = 300
 corpus = []
-readData(corpus, "docs.txt")
+readData(corpus, "dataset.csv")
 
 vectorizer = TfidfVectorizer(stop_words="english")
 u, s, vh, words = buildTDM(corpus, vectorizer, rank)
-q = buildQuery(vectorizer, words, u, s)
 
-rankDocuments(q, vh.transpose())
+while True:
+    q = buildQuery(vectorizer, words, u, s)
+    rankDocuments(q, vh.transpose())
