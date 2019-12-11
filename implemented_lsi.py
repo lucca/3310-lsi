@@ -1,5 +1,3 @@
-# For runtime testing: Have a while loop until desired data size is reached,
-# adding "a", "b", "c" etc, then when "z" is reached go to "aa" for unique words
 from sklearn.feature_extraction.text import TfidfVectorizer
 import pandas as pd
 import numpy as np
@@ -40,15 +38,19 @@ def buildTDM(corpus, vectorizer, rank):
     tdm = np.asarray(tdm.toarray(), dtype="float")
     tdm = tdm.transpose()
 
+    # Decompose term-document matrix with SVD
     u, s, vh = np.linalg.svd(tdm, full_matrices=False)
 
+    # Truncate columns of u to desired rank = k
     u = np.delete(u, np.s_[rank:], 1)
 
+    # Truncate rows/columns of s, then take the inverse
     s = np.diag(s)
     s = np.delete(s, np.s_[rank:], 1)
     s = np.delete(s, np.s_[rank:], 0)
     s = np.linalg.inv(s)
 
+    # Truncate rows of vh
     vh = np.delete(vh, np.s_[rank:], 0)
     vh = vh.transpose()
     vh = normalize(vh)
@@ -76,12 +78,14 @@ def buildQuery(vectorizer, words, u, s):
     q = resized
     q = np.asarray(q)
 
-    q = np.matmul(q, u)
-    q = np.matmul(q, s)
+    # q = sigma^-1 * UT * q
+    # Transpose q and result to get back into correct shape
+    result = np.matmul(s, u.transpose())
+    result = np.matmul(result, q.transpose())
 
-    q = normalize(q)
+    result = normalize(result)
 
-    return q
+    return result.transpose()
 
 
 def rankDocuments(q, vh):
@@ -93,8 +97,8 @@ def rankDocuments(q, vh):
     ranks.sort(reverse=True)
 
     print()
-    print("Most relevant documents")
-    print("------------------------")
+    print("Most relevant documents") 
+    print("------------------------") 
     for i in range(min(len(ranks), 10)):
         print(corpus[ranks[i][1]].rstrip())
 
